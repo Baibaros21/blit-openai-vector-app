@@ -43,10 +43,19 @@ class VectorSearchManager():
     def create_doc_indexes(self):
         index_manager = DocumentIndexManager()
         doc_index_resources = index_manager.create_document_index_resources(
-        self.prefix, self.storage_connection_string, self.doc_container_name)
+        self.prefix)
         
         print("Document index resources created")
-        print(doc_index_resources)
+        print(doc_index_resources) 
+
+    def creat_doc_indexer(self):
+        index_manager = DocumentIndexManager()
+        doc_index_resources = index_manager.create_document_indexer(
+        self.prefix, self.storage_connection_string, self.doc_container_name)
+        
+        print("Document indexer resources created")
+        print(doc_index_resources) 
+
 
 
 

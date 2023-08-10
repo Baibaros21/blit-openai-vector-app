@@ -48,31 +48,28 @@ class DocumentIndexManager(IndexManager):
   
     def _create_document_index(self, index_prefix):
         
-        name = get_index_name(index_prefix)
+        name = "sharepoint-index" #get_index_name(index_prefix)
         fields = [
                     SimpleField(name="document_id", type=SearchFieldDataType.String, filterable=True, sortable=True, key=True),
                     SearchableField(name="content", type=SearchFieldDataType.String),
                     SimpleField(name="filesize", type=SearchFieldDataType.Int64),
-                    SimpleField(name="filepath", type=SearchFieldDataType.String)
+                    SimpleField(name="filepath", type=SearchFieldDataType.String 
+                                )
                 ]
-        return self.create_index(name, fields, vector_search=None, semantic_title_field_name="filepath", semantic_content_field_names=["content"])
+        return self.create_index(name, fields, vector_search=None, semantic_title_field_name="filepath", semantic_content_field_names=["content"]) 
+    
+    def _get_index(self, index_prefix):
+
+        return "sharepoint-index"
             
     def _create_document_datasource(self, index_prefix, storage_connection_string, container_name):
         name = get_datasource_name(index_prefix)
         return self.create_blob_datasource(name, storage_connection_string, container_name)
 
     def _create_document_skillset(self, index_prefix, content_field_name="content"):
-        openai.api_type = "azure"
-        API_KEY=os.environ.get("AZURE_OPENAI_KEY")
-        AZURE_OPENAI_RESOURCE=os.environ.get("AZURE_OPENAI_RESOURCE")
-        AZURE_OPENAI_EMBEDDING_MODEL=os.environ.get("AZURE_OPENAI_EMBEDDING_MODEL")
-        AZURE_OPENAI_VERSION = os.getenv("AZURE_OPENAI_PREVIEW_API_VERSION")
-        openai.api_key = API_KEY
-        openai.api_base =f"https://{AZURE_OPENAI_RESOURCE}.openai.azure.com/"
-        openai.api_version = os.getenv("AZURE_OPENAI_PREVIEW_API_VERSION")
 
-        embedding_skill_endpoint = openai.api_base
-        name = get_skillset_name(index_prefix)
+
+        name = "sharepoint-skillset"
         chunk_index_blob_container_name = get_chunk_index_blob_container_name(index_prefix)
         content_context = f"/document/{content_field_name}"
  
@@ -98,9 +95,9 @@ class DocumentIndexManager(IndexManager):
                                                                         generated_key_name="id",
                                                                         source_context=f"{content_context}/chunks/*",
                                                                         inputs=[
-                                                                            InputFieldMappingEntry(name="source_document_id", source="/document/document_id"),
-                                                                            InputFieldMappingEntry(name="source_document_filepath", source="/document/filepath"),
-                                                                            InputFieldMappingEntry(name="source_field_name", source=f"{content_context}/chunks/*/embedding_metadata/fieldname"),
+                                                                            InputFieldMappingEntry(name="document_id", source="/document/document_id"),
+                                                                            InputFieldMappingEntry(name="filepath", source="/document/filepath"),
+                                                                            InputFieldMappingEntry(name="source_field_name", source=f"{content_context}/chunks/*/embedding_metadata/source_field_name"),
                                                                             InputFieldMappingEntry(name="title", source=f"{content_context}/chunks/*/title"),
                                                                             InputFieldMappingEntry(name="text", source=f"{content_context}/chunks/*/content"),
                                                                             InputFieldMappingEntry(name="embedding", source=f"{content_context}/chunks/*/embedding_metadata/embedding"),
@@ -114,9 +111,15 @@ class DocumentIndexManager(IndexManager):
  
         skillset = SearchIndexerSkillset(name=name, skills=[embedding_skill], description=name,knowledge_store=knowledge_store)
         client = get_indexer_client()
-        return client.create_skillset(skillset)
+        return client.create_skillset(skillset) 
+    
+    def _get_skillset(self, index_prefix):
 
-    def _create_document_indexer(self, index_prefix, data_source_name, index_name, skillset_name, content_field_name="content", generate_page_images=True):
+        skillset_name = "sharepoint-skillset"
+
+        return skillset_name
+
+    def _create_document_indexer(self, index_prefix, data_source_name, index_name, skillset_name, content_field_name="content", generate_page_images=False):
         content_context = f"/document/{content_field_name}"
         name = get_indexer_name(index_prefix)
         indexer_config = {"dataToExtract": "contentAndMetadata", "imageAction": "generateNormalizedImagePerPage"} if generate_page_images else {"dataToExtract": "contentAndMetadata"}
@@ -127,10 +130,12 @@ class DocumentIndexManager(IndexManager):
             data_source_name=data_source_name,
             skillset_name=skillset_name,
             field_mappings=[FieldMapping(source_field_name="metadata_spo_site_library_item_id", target_field_name="document_id", mapping_function=FieldMappingFunction(name="base64Encode", parameters=None)),
-                            FieldMapping(source_field_name="metadata_storage_name", target_field_name="filepath"),
-                            FieldMapping(source_field_name="metadata_storage_size", target_field_name="filesize")],
+                            FieldMapping(source_field_name="metadata_spo_item_path", target_field_name="filepath"),
+                            FieldMapping(source_field_name="metadata_spo_item_size", target_field_name="filesize")
+                            ],
             output_field_mappings=[],
             parameters=parameters
+
         )
         indexer_client = get_indexer_client()
         return indexer_client.create_indexer(indexer) 
@@ -139,43 +144,40 @@ class DocumentIndexManager(IndexManager):
         name = get_datasource_name(index_prefix)
         return self.create_blob_datasource(name, storage_connection_string, container_name) 
     
-    def _get_index(self, index_prefix):
-        print("creating index")
-        return self._create_document_index(index_prefix).name
-
-    def _get_datasource(self, index_prefix, customer_storage_connection_string, customer_container_name):
+    def _get_datasource(self, index_prefix):
       
-        # print("creating datasource")
-        # data_source_name = self._create_document_datasource(index_prefix, customer_storage_connection_string, customer_container_name).name
-
-        data_source_name = "blit-openai-vector-datasource"
+        data_source_name = "sharepoint-datasource"
 
         return  data_source_name
+    
 
-    def _get_skillset(self, index_prefix):
-        # print("creating skillset")
-        # skillset_name = self._create_document_skillset(index_prefix).name
-
-        skillset_name = "blit-openai-vector-skillset"
-
-        return skillset_name
-
-    def _get_indexer(self, index_prefix, data_source_name,index_name,skillset_name):
-        print("creating indexer")
-        indexer_name = self._create_document_indexer(index_prefix,data_source_name = data_source_name, index_name=index_name, skillset_name=skillset_name).name
-        self.wait_for_indexer_completion(indexer_name)
+    def _get_indexer(self, index_prefix):
+        indexer_name = 'sharepoint-indexer'
         return indexer_name
 
-    def create_document_index_resources(self, index_prefix, customer_storage_connection_string, customer_container_name) -> dict:
+    def create_document_indexer(self, index_prefix, customer_storage_connection_string, customer_container_name) -> dict:
             index_name = self._get_index(index_prefix)
-            data_source_name = self._get_datasource(index_prefix,customer_storage_connection_string,customer_container_name)
+            data_source_name = self._get_datasource(index_prefix)
             skillset_name = self._get_skillset(index_prefix)
             time.sleep(5)
-            indexer_name = self._get_indexer(index_prefix,data_source_name,index_name,skillset_name)
+            indexer_name = self._create_document_indexer(index_prefix,data_source_name,index_name,skillset_name)
             return {"index_name": index_name, 
                     "data_source_name": data_source_name,
                       "skillset_name": skillset_name, 
-                      "indexer_name": indexer_name} 
+                      "indexer_name": indexer_name}  
+    
+    def create_document_index_resources(self, index_prefix) -> dict:
+            index_name = self._create_document_index(index_prefix)
+            data_source_name = self._get_datasource(index_prefix)
+            skillset_name = self._create_document_skillset(index_prefix)
+            time.sleep(5)
+            indexer_name = self._create_document_indexer(index_prefix,data_source_name,index_name,skillset_name)
+            return {"index_name": index_name, 
+                    "data_source_name": data_source_name,
+                      "skillset_name": skillset_name, 
+                      "indexer_name": indexer_name}  
+    
+
 
 
 
@@ -183,7 +185,8 @@ class DocumentIndexManager(IndexManager):
         index_client = get_index_client()
         indexer_client = get_indexer_client()
 
-        index_client.delete_index(index=get_index_name(index_prefix))
+        index_client.delete_index("sharepoint-index")
+        indexer_client.delete_skillset("sharepoint-skillset")
         indexer_client.delete_indexer(indexer=get_indexer_name(index_prefix))
 
         # indexer_client.delete_data_source_connection(data_source_connection=get_datasource_name(index_prefix))

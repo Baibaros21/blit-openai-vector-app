@@ -25,6 +25,8 @@ from azure.search.documents.indexes.models import (
     VectorSearch,  
     VectorSearchAlgorithmConfiguration,  
 )
+
+from documentindexmanager import DocumentIndexManager
 load_dotenv()
 AZURE_OPENAI_EMBEDDING_MODEL=os.environ.get("AZURE_OPENAI_EMBEDDING_MODEL")
 AZURE_OPENAI_RESOURCE=os.environ.get("AZURE_OPENAI_RESOURCE")
@@ -38,10 +40,15 @@ AZURE_STORAGE_CONTAINER_NAME=os.environ.get('AZURE_STORAGE_CONTAINER_NAME')
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
 from vectorsearchmanager import VectorSearchManager
 
-search_manager = VectorSearchManager("blit-openai-vector")
-print(search_manager.create_doc_indexes())
+search_manager = VectorSearchManager("sharepoint")
+
+# search_manager.delete_doc_indexes()
+# search_manager.create_doc_indexes()
+search_manager.creat_doc_indexer()
 # search_manager.delete_indexes()
-# print("indexes deleted!")
+# print("indexes deleted!") 
+
+
 
 
 # search_manager.get_chunk_index_resources() 
