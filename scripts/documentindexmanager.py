@@ -76,10 +76,10 @@ class DocumentIndexManager(IndexManager):
         embedding_skill = WebApiSkill(
                             name="chunking-embedding-skill",
                             uri=f"https://chunk-embed-function-app.azurewebsites.net/api/chunk-embed" ,
-                            timeout="PT3M",
+                            timeout="PT230S",
                             batch_size=1,
                             http_headers={"x-functions-key": "HdCOewX7wX6ex3D2HPZOMboT9l3oo6CS2zf0gqwCVAvIAzFultK-3Q=="},
-                            degree_of_parallelism=1,
+                            degree_of_parallelism=3,
                             context=content_context,
                             inputs=[
                                     InputFieldMappingEntry(name="document_id", source="/document/document_id"),
@@ -122,8 +122,8 @@ class DocumentIndexManager(IndexManager):
     def _create_document_indexer(self, index_prefix, data_source_name, index_name, skillset_name, content_field_name="content", generate_page_images=False):
         content_context = f"/document/{content_field_name}"
         name = get_indexer_name(index_prefix)
-        indexer_config = {"dataToExtract": "contentAndMetadata", "imageAction": "generateNormalizedImagePerPage"} if generate_page_images else {"dataToExtract": "contentAndMetadata"}
-        parameters = IndexingParameters(max_failed_items = -1, configuration=indexer_config)
+        indexer_config = {"dataToExtract": "contentAndMetadata","indexedFileNameExtensions" : ".pdf, .docx","excludedFileNameExtensions" : ".png, .jpg"}
+        parameters = IndexingParameters(batch_size=100, max_failed_items = -1,configuration=indexer_config)
         indexer = SearchIndexer(
             name=name,
             target_index_name=index_name,
@@ -155,7 +155,7 @@ class DocumentIndexManager(IndexManager):
         indexer_name = 'sharepoint-indexer'
         return indexer_name
 
-    def create_document_indexer(self, index_prefix, customer_storage_connection_string, customer_container_name) -> dict:
+    def create_document_indexer(self, index_prefix) -> dict:
             index_name = self._get_index(index_prefix)
             data_source_name = self._get_datasource(index_prefix)
             skillset_name = self._get_skillset(index_prefix)
@@ -176,6 +176,26 @@ class DocumentIndexManager(IndexManager):
                     "data_source_name": data_source_name,
                       "skillset_name": skillset_name, 
                       "indexer_name": indexer_name}  
+    def create_document_indexer_and_skillset(self,index_prefix):
+        index_name = self._get_index(index_prefix)
+        data_source_name = self._get_datasource(index_prefix)
+        skillset_name = self._create_document_skillset(index_prefix)
+        time.sleep(5)
+        indexer_name = self._create_document_indexer(index_prefix,data_source_name,index_name,skillset_name)
+        return {"index_name": index_name, 
+                "data_source_name": data_source_name,
+                    "skillset_name": skillset_name, 
+                    "indexer_name": indexer_name}  
+         
+    def create_index_and_skillset(self,index_prefix):
+        index_name = self._create_document_index(index_prefix)
+        skillset_name = self._create_document_skillset(index_prefix)
+
+        return {"index_name": index_name, 
+        
+            "skillset_name": skillset_name, 
+            } 
+          
     
 
 

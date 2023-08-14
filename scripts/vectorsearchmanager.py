@@ -51,10 +51,20 @@ class VectorSearchManager():
     def creat_doc_indexer(self):
         index_manager = DocumentIndexManager()
         doc_index_resources = index_manager.create_document_indexer(
-        self.prefix, self.storage_connection_string, self.doc_container_name)
+        self.prefix)
         
         print("Document indexer resources created")
-        print(doc_index_resources) 
+        print(doc_index_resources)  
+
+    def create_doc_indexer_skillset(self):
+
+        index_manager = DocumentIndexManager()
+        doc_index_resources = index_manager.create_document_indexer_and_skillset(self.prefix)
+        
+        print("Document indexer resources created")
+        print(doc_index_resources)  
+
+
 
 
 
@@ -62,6 +72,10 @@ class VectorSearchManager():
     def create_doc_index(self):
         index_manager = DocumentIndexManager()
         return index_manager._get_index(self.prefix)
+    
+    def create_doc_index_and_skillset(self):
+        index_manager = DocumentIndexManager()
+        return index_manager.create_index_and_skillset(self.prefix)
 
     def delete_indexes(self):
         index_manager = DocumentIndexManager()

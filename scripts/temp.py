@@ -46,8 +46,7 @@ search_manager = VectorSearchManager("sharepoint")
 # search_manager.create_doc_indexes()
 search_manager.creat_doc_indexer()
 # search_manager.delete_indexes()
-# print("indexes deleted!") 
-
+# print("indexes deleted!")  
 
 
 
