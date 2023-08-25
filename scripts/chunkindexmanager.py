@@ -58,9 +58,9 @@ class ChunkIndexManager(IndexManager):
         fields = [
             SimpleField(name="id", type=SearchFieldDataType.String,  filterable=True, sortable=True, key=True),            
             SimpleField(name="source_document_id", type=SearchFieldDataType.String),
-            SimpleField(name="source_document_filepath", type=SearchFieldDataType.String),
+            SearchableField(name="source_document_filepath", type=SearchFieldDataType.String,searchable=True),
             SimpleField(name="source_field_name", type=SearchFieldDataType.String),
-            SearchableField(name="title", type=SearchFieldDataType.String),   
+            SearchableField(name="title", type=SearchFieldDataType.String, searchable=True),   
             SimpleField(name="index", type=SearchFieldDataType.Int64),
             SimpleField(name="offset", type=SearchFieldDataType.Int64),
             SimpleField(name="length", type=SearchFieldDataType.Int64),
@@ -75,7 +75,7 @@ class ChunkIndexManager(IndexManager):
         name = get_datasource_name(f"{index_prefix}-chunk")
         return self.create_blob_datasource(name, storage_connection_string, container_name)
 
-    def _create_chunk_indexer(self, index_prefix, data_source_name, index_name):
+    def _create_indexer(self, index_prefix, data_source_name, index_name):
         name = get_indexer_name(f"{index_prefix}-chunk")
         parameters = IndexingParameters(configuration={"parsing_mode": "json"})
         indexer = SearchIndexer(
@@ -89,31 +89,22 @@ class ChunkIndexManager(IndexManager):
     
 
 
-    def _get_index(self, index_prefix):
-        print("creating index")
-        return self._create_chunk_index(index_prefix).name
-
-    def _get_datasource(self, index_prefix, customer_storage_connection_string, customer_container_name):
-        # print("creating datasource")
-        # data_source_name = self._create_chunk_datasource(index_prefix, customer_storage_connection_string, customer_container_name).name 
-        data_source_name = "blit-openai-vector-chunk-datasource"
-        return  data_source_name
-
-
-    def _get_indexer(self, index_prefix, data_source_name,index_name):
+    def _create_chunk_indexer(self, index_prefix, data_source_name,index_name):
         print("creating indexer")
-        indexer_name = self._create_chunk_indexer(index_prefix, data_source_name, index_name).name
+        indexer_name = self._create_indexer(index_prefix, data_source_name, index_name).name
         self.wait_for_indexer_completion(indexer_name)
         return indexer_name
 
-    def create_chunk_index_resources(self, index_prefix, 
-                                     chunk_index_storage_connection_string,
-                                     chunk_index_blob_container_name) -> dict:
+    def create_chunk_index_resources(self, index_prefix, data_source_name=None,index_name=None,
+                                     chunk_index_storage_connection_string = None,
+                                     chunk_index_blob_container_name = None) -> dict:
 
-        index_name = self._get_index( index_prefix)
-        data_source_name = self._get_datasource(index_prefix,chunk_index_storage_connection_string,chunk_index_blob_container_name)
+        if data_source_name is None:
+            data_source_name = self.data_source_name = self._create_chunk_datasource(index_prefix, chunk_index_storage_connection_string, chunk_index_blob_container_name).name 
+        if index_name is None:
+            index_name = self._create_chunk_index(index_prefix).name
         time.sleep(5)
-        indexer_name =self._get_indexer(index_prefix, data_source_name,index_name)
+        indexer_name =self._create_chunk_indexer(index_prefix, data_source_name,index_name)
         return {"index_name": index_name, "data_source_name": data_source_name, "indexer_name": indexer_name}
 
 

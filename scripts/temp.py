@@ -40,13 +40,13 @@ AZURE_STORAGE_CONTAINER_NAME=os.environ.get('AZURE_STORAGE_CONTAINER_NAME')
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
 from vectorsearchmanager import VectorSearchManager
 
-search_manager = VectorSearchManager("sharepoint")
+search_manager = VectorSearchManager("blit-openai-vector")
 
 # search_manager.delete_doc_indexes()
 # search_manager.create_doc_indexes()
-search_manager.creat_doc_indexer()
-# search_manager.delete_indexes()
-# print("indexes deleted!")  
+#search_manager.create_doc_index_resources(data_source_name="blit-openai-vector-datasource")
+#search_manager.create_doc_indexer(index_name="test-formrecognizer-index",data_source_name="blit-openai-vector-datasource",skillset_name="test-formrecognizer-skillset") 
+search_manager.create_chunk_index_resources()
 
 
 

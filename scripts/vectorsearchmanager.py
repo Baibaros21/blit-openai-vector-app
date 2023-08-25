@@ -40,42 +40,26 @@ class VectorSearchManager():
         print(doc_index_resources,chunk_index_resources)
         return {"doc_index_resources": doc_index_resources, "chunk_index_resources": chunk_index_resources}
     
-    def create_doc_indexes(self):
+    def create_chunk_index_resources(self):
+        chunk_index_manager = ChunkIndexManager()
+        chunk_index_manager._create_chunk_index(self.prefix)
+        print("Index created")
+    
+    def create_doc_index_resources(self,data_source_name=None,index_name=None, skillset_name = None):
         index_manager = DocumentIndexManager()
         doc_index_resources = index_manager.create_document_index_resources(
-        self.prefix)
+        self.prefix,index_name=index_name,data_source_name=data_source_name,skillset_name=skillset_name )
         
         print("Document index resources created")
         print(doc_index_resources) 
 
-    def creat_doc_indexer(self):
+    def creat_doc_indexer(self, index_name=None, data_source_name=None, skillset_name = None):
         index_manager = DocumentIndexManager()
         doc_index_resources = index_manager.create_document_indexer(
-        self.prefix)
+        self.prefix, index_name,data_source_name,skillset_name)
         
         print("Document indexer resources created")
         print(doc_index_resources)  
-
-    def create_doc_indexer_skillset(self):
-
-        index_manager = DocumentIndexManager()
-        doc_index_resources = index_manager.create_document_indexer_and_skillset(self.prefix)
-        
-        print("Document indexer resources created")
-        print(doc_index_resources)  
-
-
-
-
-
-
-    def create_doc_index(self):
-        index_manager = DocumentIndexManager()
-        return index_manager._get_index(self.prefix)
-    
-    def create_doc_index_and_skillset(self):
-        index_manager = DocumentIndexManager()
-        return index_manager.create_index_and_skillset(self.prefix)
 
     def delete_indexes(self):
         index_manager = DocumentIndexManager()

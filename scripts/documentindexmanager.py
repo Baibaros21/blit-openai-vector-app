@@ -47,8 +47,8 @@ from indexmanager import IndexManager
 class DocumentIndexManager(IndexManager):
   
     def _create_document_index(self, index_prefix):
-        
-        name = "sharepoint-index" #get_index_name(index_prefix)
+        print("Creating index...")
+        name = get_index_name(index_prefix)
         fields = [
                     SimpleField(name="document_id", type=SearchFieldDataType.String, filterable=True, sortable=True, key=True),
                     SearchableField(name="content", type=SearchFieldDataType.String),
@@ -67,9 +67,8 @@ class DocumentIndexManager(IndexManager):
         return self.create_blob_datasource(name, storage_connection_string, container_name)
 
     def _create_document_skillset(self, index_prefix, content_field_name="content"):
-
-
-        name = "sharepoint-skillset"
+        print("Creating the skillset....")
+        name = get_skillset_name(index_prefix)
         chunk_index_blob_container_name = get_chunk_index_blob_container_name(index_prefix)
         content_context = f"/document/{content_field_name}"
  
@@ -97,7 +96,7 @@ class DocumentIndexManager(IndexManager):
                                                                         inputs=[
                                                                             InputFieldMappingEntry(name="document_id", source="/document/document_id"),
                                                                             InputFieldMappingEntry(name="filepath", source="/document/filepath"),
-                                                                            InputFieldMappingEntry(name="source_field_name", source=f"{content_context}/chunks/*/embedding_metadata/source_field_name"),
+                                                                            InputFieldMappingEntry(name="source_field_name", source=f"{content_context}/chunks/*/embedding_metadata/fieldname"),
                                                                             InputFieldMappingEntry(name="title", source=f"{content_context}/chunks/*/title"),
                                                                             InputFieldMappingEntry(name="text", source=f"{content_context}/chunks/*/content"),
                                                                             InputFieldMappingEntry(name="embedding", source=f"{content_context}/chunks/*/embedding_metadata/embedding"),
@@ -120,18 +119,19 @@ class DocumentIndexManager(IndexManager):
         return skillset_name
 
     def _create_document_indexer(self, index_prefix, data_source_name, index_name, skillset_name, content_field_name="content", generate_page_images=False):
+        print("Creating the indexer")
         content_context = f"/document/{content_field_name}"
         name = get_indexer_name(index_prefix)
-        indexer_config = {"dataToExtract": "contentAndMetadata","indexedFileNameExtensions" : ".pdf, .docx","excludedFileNameExtensions" : ".png, .jpg"}
+        indexer_config = {"dataToExtract": "contentAndMetadata"}#{"dataToExtract": "contentAndMetadata","indexedFileNameExtensions" : ".pdf, .docx","excludedFileNameExtensions" : ".png, .jpg"}
         parameters = IndexingParameters(batch_size=100, max_failed_items = -1,configuration=indexer_config)
         indexer = SearchIndexer(
             name=name,
             target_index_name=index_name,
             data_source_name=data_source_name,
             skillset_name=skillset_name,
-            field_mappings=[FieldMapping(source_field_name="metadata_spo_site_library_item_id", target_field_name="document_id", mapping_function=FieldMappingFunction(name="base64Encode", parameters=None)),
-                            FieldMapping(source_field_name="metadata_spo_item_path", target_field_name="filepath"),
-                            FieldMapping(source_field_name="metadata_spo_item_size", target_field_name="filesize")
+            field_mappings=[FieldMapping(source_field_name="metadata_storage_path", target_field_name="document_id", mapping_function=FieldMappingFunction(name="base64Encode", parameters=None)),
+                            FieldMapping(source_field_name="metadata_storage_name", target_field_name="filepath"),
+                            FieldMapping(source_field_name="metadata_storage_size", target_field_name="filesize")
                             ],
             output_field_mappings=[],
             parameters=parameters
@@ -155,10 +155,10 @@ class DocumentIndexManager(IndexManager):
         indexer_name = 'sharepoint-indexer'
         return indexer_name
 
-    def create_document_indexer(self, index_prefix) -> dict:
-            index_name = self._get_index(index_prefix)
-            data_source_name = self._get_datasource(index_prefix)
-            skillset_name = self._get_skillset(index_prefix)
+    def create_document_indexer(self, index_prefix,index_name, data_source_name, skillset_name ) -> dict:
+            index_name = index_name
+            data_source_name = data_source_name
+            skillset_name = skillset_name
             time.sleep(5)
             indexer_name = self._create_document_indexer(index_prefix,data_source_name,index_name,skillset_name)
             return {"index_name": index_name, 
@@ -166,38 +166,21 @@ class DocumentIndexManager(IndexManager):
                       "skillset_name": skillset_name, 
                       "indexer_name": indexer_name}  
     
-    def create_document_index_resources(self, index_prefix) -> dict:
-            index_name = self._create_document_index(index_prefix)
-            data_source_name = self._get_datasource(index_prefix)
-            skillset_name = self._create_document_skillset(index_prefix)
-            time.sleep(5)
+    def create_document_index_resources(self, index_prefix, data_source_name=None,index_name=None, skillset_name = None) -> dict:
+            if index_name is None:
+                index_name = self._create_document_index(index_prefix)
+            if data_source_name is None:
+                data_source_name = self._get_datasource(index_prefix)
+            if skillset_name is None:
+                skillset_name = self._create_document_skillset(index_prefix)
+           
+            time.sleep(10)
+            
             indexer_name = self._create_document_indexer(index_prefix,data_source_name,index_name,skillset_name)
             return {"index_name": index_name, 
                     "data_source_name": data_source_name,
                       "skillset_name": skillset_name, 
                       "indexer_name": indexer_name}  
-    def create_document_indexer_and_skillset(self,index_prefix):
-        index_name = self._get_index(index_prefix)
-        data_source_name = self._get_datasource(index_prefix)
-        skillset_name = self._create_document_skillset(index_prefix)
-        time.sleep(5)
-        indexer_name = self._create_document_indexer(index_prefix,data_source_name,index_name,skillset_name)
-        return {"index_name": index_name, 
-                "data_source_name": data_source_name,
-                    "skillset_name": skillset_name, 
-                    "indexer_name": indexer_name}  
-         
-    def create_index_and_skillset(self,index_prefix):
-        index_name = self._create_document_index(index_prefix)
-        skillset_name = self._create_document_skillset(index_prefix)
-
-        return {"index_name": index_name, 
-        
-            "skillset_name": skillset_name, 
-            } 
-          
-    
-
 
 
 

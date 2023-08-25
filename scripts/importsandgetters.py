@@ -1,5 +1,6 @@
 import os 
 import time
+from dotenv import load_dotenv
 from azure.core.credentials import AzureKeyCredential
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceNotFoundError
@@ -32,12 +33,13 @@ from azure.search.documents.indexes.models import (
     VectorSearchAlgorithmConfiguration
 ) 
 
-
+load_dotenv()
 AZURE_SEARCH_SERVICE_ENDPOINT = os.getenv("AZURE_SEARCH_SERVICE_ENDPOINT")
 AZURE_SEARCH_KEY = os.getenv("AZURE_SEARCH_KEY")
 AZURE_SEARCH_KNOWLEDGE_STORE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_SEARCH_KNOWLEDGE_STORE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CHUNK_CONTAINER_NAME")
 def get_index_client() -> SearchIndexClient:
+        print(AZURE_SEARCH_SERVICE_ENDPOINT,"\n",AZURE_SEARCH_KEY)
         return SearchIndexClient(AZURE_SEARCH_SERVICE_ENDPOINT, AzureKeyCredential(AZURE_SEARCH_KEY))
 
 def get_indexer_client() -> SearchIndexerClient:
