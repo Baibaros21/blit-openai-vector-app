@@ -247,12 +247,13 @@ def conversation_without_data(request):
 @app.route("/conversation", methods=["GET", "POST"])
 def conversation():
     try:
-        use_data = should_use_data()
+        use_data = False
         if use_data:
             return conversation_with_data(request)
         else:
             return conversation_without_data(request)
     except Exception as e:
+        
         logging.exception("Exception in /conversation")
         return jsonify({"error": str(e)}), 500
 
